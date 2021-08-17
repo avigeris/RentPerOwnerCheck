@@ -48,13 +48,11 @@ namespace MyPlugins
                     {
                         var customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
 
-                        // select * from contact where emailaddress1 == 'email'
 
                         QueryExpression query = new QueryExpression("crc6f_rent");
                         query.ColumnSet = new ColumnSet(new string[] { "crc6f_customer" });
-                        //query.Criteria.AddCondition("crc6f_customer", ConditionOperator.Equal, customerId);
-                        //query.Criteria.AddCondition("statuscode", ConditionOperator.Equal, 735370001);
 
+                        // get all rents with same customer in status renting
                         FilterExpression rentFilter = new FilterExpression(LogicalOperator.And);
                         rentFilter.AddCondition("crc6f_customer", ConditionOperator.Equal, customerId);
                         rentFilter.AddCondition("statuscode", ConditionOperator.Equal, 735370001);
@@ -63,7 +61,7 @@ namespace MyPlugins
                         EntityCollection collection = service.RetrieveMultiple(query);
 
                         var statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
-
+                        //check first if current rent status is renting
                         if ((statusReason == 735370001) && (collection.Entities.Count >= 10))
                         {
                             throw new InvalidPluginExecutionException("Can't create more then 10 rents in status renting per cutomer");
