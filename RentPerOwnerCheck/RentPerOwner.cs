@@ -37,37 +37,40 @@ namespace MyPlugins
             {
                 // Obtain the target entity from the input parameters.  
                 Entity rent = (Entity)context.InputParameters["Target"];
-
-
+                
                 try
                 {
                     // Plug-in business logic goes here.  
-                    
 
-                    if (rent.Attributes.Contains("crc6f_customer"))
+                    //check first if current rent status is renting
+                    var statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
+                    if (statusReason == 735370001)
                     {
-                        var customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
 
-
-                        QueryExpression query = new QueryExpression("crc6f_rent");
-                        query.ColumnSet = new ColumnSet(new string[] { "crc6f_customer" });
-
-                        // get all rents with same customer in status renting
-                        FilterExpression rentFilter = new FilterExpression(LogicalOperator.And);
-                        rentFilter.AddCondition("crc6f_customer", ConditionOperator.Equal, customerId);
-                        rentFilter.AddCondition("statuscode", ConditionOperator.Equal, 735370001);
-                        query.Criteria = rentFilter;
-
-                        EntityCollection collection = service.RetrieveMultiple(query);
-
-                        var statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
-                        //check first if current rent status is renting
-                        if ((statusReason == 735370001) && (collection.Entities.Count >= 10))
+                        if (rent.Attributes.Contains("crc6f_customer"))
                         {
-                            throw new InvalidPluginExecutionException("Can't create more then 10 rents in status renting per cutomer");
+                            var customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
+
+
+                            QueryExpression query = new QueryExpression("crc6f_rent");
+                            query.ColumnSet = new ColumnSet(new string[] { "crc6f_customer" });
+
+                            // get all rents with same customer in status renting
+                            FilterExpression rentFilter = new FilterExpression(LogicalOperator.And);
+                            rentFilter.AddCondition("crc6f_customer", ConditionOperator.Equal, customerId);
+                            rentFilter.AddCondition("statuscode", ConditionOperator.Equal, 735370001);
+                            query.Criteria = rentFilter;
+
+                            EntityCollection collection = service.RetrieveMultiple(query);
+
+
+
+                            if (collection.Entities.Count >= 10)
+                            {
+                                throw new InvalidPluginExecutionException("Can't create more then 10 rents in status renting per cutomer");
+                            }
                         }
                     }
-
 
                 }
 
