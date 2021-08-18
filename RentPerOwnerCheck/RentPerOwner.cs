@@ -37,20 +37,76 @@ namespace MyPlugins
             {
                 // Obtain the target entity from the input parameters.  
                 Entity rent = (Entity)context.InputParameters["Target"];
-                
+
+
                 try
                 {
                     // Plug-in business logic goes here.  
 
-                    //check first if current rent status is renting
-                    var statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
-                    if (statusReason == 735370001)
+                    if (context.MessageName == "Create")
+
                     {
-
-                        if (rent.Attributes.Contains("crc6f_customer"))
+                        if (rent.Attributes.Contains("statuscode"))
                         {
-                            var customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
+                            //check first if current rent status is renting
+                            var statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
+                            if (statusReason == 735370001)
+                            {
 
+                                if (rent.Attributes.Contains("crc6f_customer"))
+                                {
+                                    var customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
+
+
+                                    QueryExpression query = new QueryExpression("crc6f_rent");
+                                    query.ColumnSet = new ColumnSet(new string[] { "crc6f_customer" });
+
+                                    // get all rents with same customer in status renting
+                                    FilterExpression rentFilter = new FilterExpression(LogicalOperator.And);
+                                    rentFilter.AddCondition("crc6f_customer", ConditionOperator.Equal, customerId);
+                                    rentFilter.AddCondition("statuscode", ConditionOperator.Equal, 735370001);
+                                    query.Criteria = rentFilter;
+
+                                    EntityCollection collection = service.RetrieveMultiple(query);
+
+
+                                    if (collection.Entities.Count >= 10)
+                                    {
+                                        throw new InvalidPluginExecutionException("Can't create more then 10 rents in status renting per cutomer");
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (context.MessageName == "Update")
+
+                    {
+                        Entity preRentImage = (Entity)context.PreEntityImages["RentImage"];
+
+                        //get status reason field
+                        int statusReason;
+                        if (rent.Attributes.Contains("statuscode"))
+                        {
+                            statusReason = ((OptionSetValue)rent.Attributes["statuscode"]).Value;
+                        }
+                        else
+                        {
+                            statusReason = ((OptionSetValue)preRentImage.Attributes["statuscode"]).Value;
+                        }
+
+                        if (statusReason == 735370001)
+                        {
+                            //get customer
+                            Guid customerId;
+                            if (rent.Attributes.Contains("crc6f_customer"))
+                            {
+                                customerId = ((EntityReference)rent.Attributes["crc6f_customer"]).Id;
+                            }
+                            else
+                            {
+                                customerId = ((EntityReference)preRentImage.Attributes["crc6f_customer"]).Id;
+                            }
 
                             QueryExpression query = new QueryExpression("crc6f_rent");
                             query.ColumnSet = new ColumnSet(new string[] { "crc6f_customer" });
@@ -64,12 +120,14 @@ namespace MyPlugins
                             EntityCollection collection = service.RetrieveMultiple(query);
 
 
-
                             if (collection.Entities.Count >= 10)
                             {
                                 throw new InvalidPluginExecutionException("Can't create more then 10 rents in status renting per cutomer");
                             }
                         }
+
+
+
                     }
 
                 }
