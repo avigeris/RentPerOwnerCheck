@@ -32,6 +32,7 @@ var Sdk = window.Sdk || {};
                             price = price + 100;
                         }
                         formContext.getAttribute("crc6f_price").setValue(price);
+                        Xrm.Page.getControl("crc6f_price").clearNotification();
                     }
     
                     }
@@ -41,6 +42,9 @@ var Sdk = window.Sdk || {};
                 }
                 );
             }
+        } else {
+            formContext.getAttribute("crc6f_price").setValue(null);
+            formContext.getControl("crc6f_price").setNotification("Define car class, reserved pickup, reserved handover, pickup location, return location.");
         }
     }
     const _MS_PER_DAY = 1000 * 60 * 60 * 24;
